@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
 def distance(dot, centre):
     return ((dot[0] - centre[0])**2 + ((dot[1] - centre[1])**2))**(0.5)
@@ -44,4 +45,15 @@ for dot in dots:
             dotsMatrix[3].append(dot)
 
 dotsMatrix = [j for i in dotsMatrix for j in i]
+used = []
+
+def connections(dot, used, dotsMatrix):
+    pass
+
+    
+
+
+#x,y = [i[0] for i in dotsMatrix],[i[1] for i in dotsMatrix]
+#plt.plot(x,y, "ro-")
+#plt.show()
 # do NOT flat and sort in each sector!!!
