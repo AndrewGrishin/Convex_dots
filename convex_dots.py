@@ -1,6 +1,6 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import random
+import rnd_dots
+
+#rnd_dots.generate()
 
 def distance(dot, centre):
     return ((dot[0] - centre[0])**2 + ((dot[1] - centre[1])**2))**(0.5)
@@ -12,6 +12,7 @@ del(file)
 
 x = [i[0] for i in dots]
 y = [i[1] for i in dots]
+print(sum(x),sum(y))
 centre = (sum(x) / len(x), sum(y) / len(y))
 del(x)
 del(y)
@@ -20,40 +21,37 @@ dots = list(map(lambda dot: dot,dots))
 dots = sorted(dots, key = lambda dot : distance(dot, centre), reverse = 1)
 
 def ru_er(dot, centre):
-    return dot[0] >= centre[0] and dot[1] >= centre[1]
+    return dot[0] > centre[0] and dot[1] > centre[1]
 def rd_er(dot, centre):
-    return dot[0] >= centre[0] and dot[1] <= centre[1]
+    return dot[0] > centre[0] and dot[1] < centre[1]
 def lu_er(dot, centre):
-    return dot[0] <= centre[0] and dot[1] >= centre[1]
+    return dot[0] < centre[0] and dot[1] > centre[1]
 def ld_er(dot, centre):
-    return dot[0] <= centre[0] and dot[1] <= centre[1]
+    return dot[0] < centre[0] and dot[1] < centre[1]
 def sorter(array,dot, func):
         if dot not in array and sum(1 for sub_dot in array if func(sub_dot,dot)) == 0:
             return 1
+        else:
+            return 0
 
 dotsMatrix = [[],[],[],[]]
 
 for dot in dots:
     if ru_er(dot,centre) and sorter(dotsMatrix[0],dot,func = ru_er):
         dotsMatrix[0].append(dot)
-    elif rd_er(dot,centre) and sorter(dotsMatrix[1],dot,func = rd_er):
+        continue
+    if rd_er(dot,centre) and sorter(dotsMatrix[1],dot,func = rd_er):
         dotsMatrix[1].append(dot)
-    elif ld_er(dot,centre) and sorter(dotsMatrix[2],dot,func = ld_er):
+        continue
+    if ld_er(dot,centre) and sorter(dotsMatrix[2],dot,func = ld_er):
         dotsMatrix[2].append(dot)
-    else:
-        if sorter(dotsMatrix[3],dot,func = lu_er):
-            dotsMatrix[3].append(dot)
+        continue
+    if lu_er(dot,centre) and sorter(dotsMatrix[3],dot,func = lu_er):
+        dotsMatrix[3].append(dot)
+        continue
 
-dotsMatrix = [j for i in dotsMatrix for j in i]
-used = []
-
-def connections(dot, used, dotsMatrix):
-    pass
-
-    
-
-
-#x,y = [i[0] for i in dotsMatrix],[i[1] for i in dotsMatrix]
-#plt.plot(x,y, "ro-")
-#plt.show()
-# do NOT flat and sort in each sector!!!
+del(centre)
+for line in dotsMatrix:
+    print(line)
+#del(dots)
+#dotsMatrix = [j for i in dotsMatrix for j in i]
