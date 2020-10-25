@@ -55,3 +55,5 @@ for line in dotsMatrix:
     print(line)
 #del(dots)
 #dotsMatrix = [j for i in dotsMatrix for j in i]
+
+# graph theory : weights are distances : nearest neighbor?
