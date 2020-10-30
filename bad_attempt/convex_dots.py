@@ -17,7 +17,7 @@ centre = (sum(x) / len(x), sum(y) / len(y))
 del(x)
 del(y)
 
-dots = list(map(lambda dot: dot,dots))
+#dots = list(map(lambda dot: dot,dots))
 dots = sorted(dots, key = lambda dot : distance(dot, centre), reverse = 1)
 
 def ru_er(dot, centre):
@@ -56,4 +56,13 @@ for line in dotsMatrix:
 #del(dots)
 #dotsMatrix = [j for i in dotsMatrix for j in i]
 
-# graph theory : weights are distances : nearest neighbor?
+# - [ ] cover dots to fit the set
+#   - [ ] using nearest neighbor
+# - [ ] sort all selected dots clockwise
+# - [ ] delete selected dots, to make the set convex
+#   - [ ] check if the dot should be deleted, using “line. Compare ‘y’ coordinates
+
+# use travelling sales man problem for the first step (and maybe second)
+# import tsp module, input matrix of way (way - length between dots)
+# then get the final matrix (array of steps to do)
+# then use "line method to skip all useless points"
