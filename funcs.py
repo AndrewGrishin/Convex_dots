@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import random
-import numpy as np
+# from scipy.spatial import ConvexHull
 from functools import reduce
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.preprocessing import PolynomialFeatures
@@ -34,7 +34,7 @@ def maxConvexHullsDots(dots, task, functionCoefs):
 
     # get the function to find the value of the function in the current dot
     functionVal = findValueInDot(functionCoefs)
-
+    ind = 0
     while len(dots) != 0:
         convex_hull = jarvis_march(dots)
         # save convex_hull just in case
@@ -45,7 +45,13 @@ def maxConvexHullsDots(dots, task, functionCoefs):
         # for dot in convex_hull:
             # print(str(dot[0]) + "," + str(dot[1]))
         # print()
-        dots = list(set(dots) - set(convex_hull))
+        dots = list(set(map(tuple,dots)) - set(map(tuple,convex_hull)))
+
+        print("Iteration",ind)
+        for dot in convex_hull:
+            print("{},{}".format(dot[0],dot[1]))
+        print()
+        ind += 1
         del(convex_hull)
 
     return (maxDotsValues,convex_hulls)
@@ -80,7 +86,7 @@ def direction(p, q, r):
 def jarvis_march(dotsArray):
 
     # form convex hull
-    l = dotsArray.index(min(dotsArray, key = lambda dot: dot[0]))
+    l = dotsArray.index(min(dotsArray, key = lambda dot: dot[1]))
     convex_hull = [dotsArray[l]]
 
     # first iteration to make p != l
@@ -98,7 +104,7 @@ def jarvis_march(dotsArray):
         for ind in range(len(dotsArray)):
             if (direction(dotsArray[p],dotsArray[ind],dotsArray[q]) == 2):
                 q = ind
-        p = q
+        p = q  
 
     # add colinear points to the convex hull
     convex_hull2 = convex_hull[:]
@@ -110,19 +116,19 @@ def jarvis_march(dotsArray):
             if a * dot[0] + b * dot[1] == c: convex_hull2.append(dot)
 
     del(convex_hull)
-    del(p)
-    del(q)
-    del(l)
+    #del(p)
+    #del(q)
+    #del(l)
     return convex_hull2
     
 # trains the model
-def regress(df):
+def regress(df, degreeOfRegression = 3):
     # polynomial regression is 2 steps process
     # first -> transform data into polynomial ("PolynomicalFeaturs()")
     # second -> use Linear Regression
     # to automate this process -> use Pipelines
     # here creates steps of NonLinear Regression
-    input = [("polynomial",PolynomialFeatures(degree = 25)), ("modal",LinearRegression())]
+    input = [("polynomial",PolynomialFeatures(degree = degreeOfRegression)), ("modal",LinearRegression())]
     # creates model "pipe", using these steps
     pipe = Pipeline(input)
     # creates a model with "self.df.shape[1] - 1" number of coeficents and one basis variable "f"
@@ -130,3 +136,10 @@ def regress(df):
     # train the model
     pipe.fit(df[list(df.columns)[0:-1:1]],df[list(df.columns)[-1]])
     return pipe
+
+def mes(f,newf):
+    import pandas as pd
+    df = pd.DataFrame(zip(f,newf))
+    return ((df[0] - df[1])**2).sum() / df.shape[0]
+
+
