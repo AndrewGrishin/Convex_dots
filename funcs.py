@@ -27,34 +27,46 @@ def findValueInDot(functionCoefs):
         return reduce(lambda a,b : a + b,map(lambda a : a[0] * a[1],zip(dot,functionCoefs)))
     return f
 
-def maxConvexHullsDots(dots, task, functionCoefs):
-    maxDotsValues = []
+def maxConvexHullsDots(dots, functionCoefs, dispX, dispY, avgX, avgY):
+    maxDotsValues, minDotsValues = [], []
     # array to collect subconvex_hulls
     convex_hulls = []
 
     # get the function to find the value of the function in the current dot
     functionVal = findValueInDot(functionCoefs)
+
     ind = 0
+    file = open("output_convex_hulls.txt","w")
+
     while len(dots) != 0:
         convex_hull = jarvis_march(dots)
         # save convex_hull just in case
         convex_hulls.append(convex_hull)
         #dot = max(convex_hull, key = functionVal) if task else min(convex_hull, key = functionVal)
-        maxDotsValues.append(max(convex_hull, key = functionVal) if task else min(convex_hull, key = functionVal))
-        # print current convex_hull
+        maxDot, minDot = max(convex_hull, key = functionVal), min(convex_hull, key = functionVal)
+
+        if maxDot not in maxDotsValues and maxDot not in minDotsValues: maxDotsValues.append(maxDot)
+        if minDot not in minDotsValues and minDot not in maxDotsValues: minDotsValues.append(minDot)
+        # print current convex_hull to the file output_convex_hulls.txt
         # for dot in convex_hull:
-            # print(str(dot[0]) + "," + str(dot[1]))
-        # print()
-        dots = list(set(map(tuple,dots)) - set(map(tuple,convex_hull)))
+        #     print(str(dot[0]) + "," + str(dot[1]), file = file)
+        # print("\n",file = file)
+        dots = tuple(set(map(tuple,dots)) - set(map(tuple,convex_hull)))
 
-        print("Iteration",ind)
+        # PRINT NUMBER of iterations and its dots
+        print("Iteration",ind, file = file)
         for dot in convex_hull:
-            print("{},{}".format(dot[0],dot[1]))
-        print()
+            print("{},{}".format(dot[0] * dispX + avgX,dot[1] * dispY + avgY), file = file)
+        print(file = file)
         ind += 1
-        del(convex_hull)
 
-    return (maxDotsValues,convex_hulls)
+        del(convex_hull)
+    minDotsValues.reverse()
+    
+    file.close()
+    del(file)
+    del(ind)
+    return (maxDotsValues + minDotsValues,convex_hulls)
 
 def generate(n,a,b):
     file = open("input_dots.txt","w")
@@ -121,25 +133,92 @@ def jarvis_march(dotsArray):
     #del(l)
     return convex_hull2
     
-# trains the model
-def regress(df, degreeOfRegression = 3):
-    # polynomial regression is 2 steps process
-    # first -> transform data into polynomial ("PolynomicalFeaturs()")
-    # second -> use Linear Regression
-    # to automate this process -> use Pipelines
-    # here creates steps of NonLinear Regression
-    input = [("polynomial",PolynomialFeatures(degree = degreeOfRegression)), ("modal",LinearRegression())]
-    # creates model "pipe", using these steps
-    pipe = Pipeline(input)
-    # creates a model with "self.df.shape[1] - 1" number of coeficents and one basis variable "f"
-    # ASSUMPTION!!! it always will be the last column
-    # train the model
-    pipe.fit(df[list(df.columns)[0:-1:1]],df[list(df.columns)[-1]])
-    return pipe
+# train the model
+def regress(df, degreeOfRegression, model = None):
+
+    if model == None:
+        # polynomial regression is 2 steps process
+        # first -> transform data into polynomial ("PolynomicalFeaturs()")
+        # second -> use Linear Regression
+        # to automate this process -> use Pipelines
+        # here creates steps of NonLinear Regression
+        input = [("polynomial",PolynomialFeatures(degree = degreeOfRegression)), ("modal",LinearRegression())]
+        # creates model "pipe", using these steps
+        model = Pipeline(input)
+        # creates a model with "self.df.shape[1] - 1" number of coeficents and one basis variable "f"
+        # ASSUMPTION!!! it always will be the last column
+        # train the model
+    
+    model.fit(df[list(df.columns)[0:-1:1]],df[list(df.columns)[-1]])
+    return model
 
 def mes(f,newf):
     import pandas as pd
     df = pd.DataFrame(zip(f,newf))
     return ((df[0] - df[1])**2).sum() / df.shape[0]
 
+def nomalizeXandY(dots):
+    xArray, yArray = zip(*dots)
+    xAvg, yAvg = sum(xArray) / len(xArray), sum(yArray) / len(yArray)
+    dispersionX = (sum(map(lambda a: a * a,xArray)) / len(xArray) - xAvg * xAvg)**(0.5)
+    dispersionY = (sum(map(lambda a: a * a,yArray)) / len(yArray) - yAvg * yAvg)**(0.5)
+    for ind,_ in enumerate(dots):
+        dots[ind] = tuple(((dots[ind][0] - xAvg) / dispersionX,(dots[ind][1] - yAvg) / dispersionY))
 
+    del(dispersionX)
+    del(dispersionY)
+    del(xAvg)
+    del(yAvg)
+    del(xArray)
+    del(yArray)
+
+    return dots
+
+def getTheBestDegreeOfRegression(df):
+    degree = 0
+    # initialize the model and train it
+    pipe = regress(df,degreeOfRegression = degree)
+    # add a new column with predicted values
+    df["f'"] = [pipe.predict([[df["x0"][i]]])[0] for i in range(df.shape[0])]
+
+    mes0 = mes(f = df["f"], newf = df["f'"])
+    mes1 = mes(f = df["f"], newf = df["f'"]) 
+
+    while mes0 >= mes1:
+
+        degree += 1
+
+        del(df["f'"])
+
+        # initialize the model and train it
+        pipe = regress(df,degreeOfRegression = degree)
+        # add a new column with predicted values
+        df["f'"] = [pipe.predict([[df["x0"][i]]])[0] for i in range(df.shape[0])]
+
+        mes0 = mes1
+        mes1 = mes(f = df["f"], newf = df["f'"]) 
+
+    del(df["f'"])
+    # technical decent
+    degree -= 1 
+    # initialize the model and train it
+    pipe = regress(df,degreeOfRegression = degree)
+    # add a new column with predicted values
+    df["f'"] = [pipe.predict([[df["x0"][i]]])[0] for i in range(df.shape[0])]
+    df["(f-f')^2 normalized"] = (df["f"] - df["f'"])**2
+    return (df,degree)
+
+def plotResult(df):
+    ax = plt.subplots()[1]
+    df.plot(x = "x0",y = ["f","f'"], ax = ax)
+    ax.scatter(df["x0"],df["f"])
+    ax.scatter(df["x0"],df["f'"])
+    # Don't allow the axis to be on top of your data
+    ax.set_axisbelow(True)
+    # Turn on the minor TICKS, which are required for the minor GRID
+    ax.minorticks_on()
+    # Customize the major grid
+    ax.grid(which='major', linestyle='-', linewidth='0.5', color='red')
+    # Customize the minor grid
+    ax.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
+    plt.show()
